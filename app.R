@@ -7,33 +7,18 @@
 
 library(shiny)
 library(tidyverse)
-library(readxl)
-library(janitor)
 library(here)
 library(scales)
 
 source(here::here("R/plot_theme.R"))
 
-# Define parameters ----
-min_price    <- 0.01   # exclude free or incorrectly priced items
-min_quantity <- 1      # exclude returns (negative quantity)
-
-# Load and clean data once at app startup ----
-sales_clean <- readxl::read_excel(here::here("data/raw/online_retail_II.xlsx")) |>
-  janitor::clean_names() |>
-  mutate(
-    invoice_date = as.Date(invoice_date),
-    month        = floor_date(invoice_date, "month"),
-    year         = year(invoice_date),
-    is_return    = str_starts(invoice, "C"),
-    revenue      = price * quantity
-  ) |>
-  filter(
-    !is_return,
-    !is.na(customer_id),
-    price    >= min_price,
-    quantity >= min_quantity
-  )
+# Load pre-cleaned data ----
+# Cached by src/preprocess_data.R from data/raw/online_retail_II.xlsx.
+# Re-parsing the 45MB raw Excel file on every app startup is slow and
+# memory-heavy on constrained hosts (e.g. Posit Cloud free tier); the
+# cached .rds loads near-instantly instead. Re-run the preprocessing
+# script if the raw data changes.
+sales_clean <- readRDS(here::here("data/processed/sales_clean.rds"))
 
 country_choices <- sales_clean |> distinct(country) |> arrange(country) |> pull(country)
 date_min <- min(sales_clean$invoice_date)
