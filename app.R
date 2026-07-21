@@ -220,7 +220,6 @@ ggsave(here::here("outputs/04_monthly_customers.png"),  plot = p4, width = 10, h
 ggsave(here::here("outputs/05_avg_order_value.png"),    plot = p5, width = 10, height = 5)
 ggsave(here::here("outputs/06_revenue_by_year.png"),    plot = p6, width = 10, height = 5)
 
-Step 4: Create a new R Markdown file named "sales_dashboard.Rmd" in the project folder.
 # Export summary table ----
 revenue_by_month |>
   write_csv(here::here("outputs/revenue_summary.csv"))
