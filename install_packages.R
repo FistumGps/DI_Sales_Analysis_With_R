@@ -1,2 +1,2 @@
 # Install required packages
-install.packages(c("tidyverse", "readxl", "janitor", "here", "scales"))
+install.packages(c("shiny", "tidyverse", "readxl", "janitor", "here", "scales"))
