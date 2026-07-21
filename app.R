@@ -2,13 +2,16 @@
 # Shiny App: Sales Analysis Dashboard — E-commerce Business
 # Input:   data/raw/online_retail_II.xlsx
 #          525,461 transactions | 8 columns | 2009-2011
-# Filters: Country, Date range — all 6 charts update live
+# Filters: Country (searchable, select all/none), Date range
+# Charts:  interactive (hover, zoom) via plotly
 # ============================================================
 
 library(shiny)
 library(tidyverse)
 library(here)
 library(scales)
+library(shinyWidgets)
+library(plotly)
 
 source(here::here("R/plot_theme.R"))
 
@@ -29,11 +32,17 @@ ui <- fluidPage(
   titlePanel("Sales Analysis Dashboard — E-commerce Business"),
   sidebarLayout(
     sidebarPanel(
-      selectInput(
+      pickerInput(
         "countries", "Country",
         choices  = country_choices,
         selected = country_choices,
-        multiple = TRUE
+        multiple = TRUE,
+        options  = pickerOptions(
+          actionsBox     = TRUE,
+          liveSearch     = TRUE,
+          selectedTextFormat = "count > 3",
+          countSelectedText  = "{0} of {1} countries"
+        )
       ),
       dateRangeInput(
         "date_range", "Date range",
@@ -42,13 +51,19 @@ ui <- fluidPage(
       )
     ),
     mainPanel(
+      fluidRow(
+        column(3, wellPanel(h5("Total Revenue"),    h3(textOutput("kpi_revenue")))),
+        column(3, wellPanel(h5("Total Orders"),     h3(textOutput("kpi_orders")))),
+        column(3, wellPanel(h5("Unique Customers"), h3(textOutput("kpi_customers")))),
+        column(3, wellPanel(h5("Avg Order Value"),  h3(textOutput("kpi_aov"))))
+      ),
       tabsetPanel(
-        tabPanel("Revenue Trend",      plotOutput("p1")),
-        tabPanel("Top Products",       plotOutput("p2")),
-        tabPanel("Revenue by Country", plotOutput("p3")),
-        tabPanel("Monthly Customers",  plotOutput("p4")),
-        tabPanel("Avg Order Value",    plotOutput("p5")),
-        tabPanel("Revenue by Year",    plotOutput("p6")),
+        tabPanel("Revenue Trend",      plotlyOutput("p1")),
+        tabPanel("Top Products",       plotlyOutput("p2")),
+        tabPanel("Revenue by Country", plotlyOutput("p3")),
+        tabPanel("Monthly Customers",  plotlyOutput("p4")),
+        tabPanel("Avg Order Value",    plotlyOutput("p5")),
+        tabPanel("Revenue by Year",    plotlyOutput("p6")),
         tabPanel("Summary Table",      tableOutput("summary_table"))
       )
     )
@@ -115,65 +130,92 @@ server <- function(input, output, session) {
       arrange(year)
   })
 
-  output$p1 <- renderPlot({
-    revenue_by_month() |>
-      ggplot(aes(month, total_revenue)) +
+  # ── KPI summary row ──────────────────────────────────────
+  output$kpi_revenue <- renderText({
+    label_comma(prefix = "£")(sum(filtered()$revenue))
+  })
+
+  output$kpi_orders <- renderText({
+    label_comma()(n_distinct(filtered()$invoice))
+  })
+
+  output$kpi_customers <- renderText({
+    label_comma()(n_distinct(filtered()$customer_id))
+  })
+
+  output$kpi_aov <- renderText({
+    d <- filtered()
+    orders <- n_distinct(d$invoice)
+    aov <- if (orders == 0) 0 else sum(d$revenue) / orders
+    label_comma(prefix = "£")(aov)
+  })
+
+  # ── Interactive charts ───────────────────────────────────
+  output$p1 <- renderPlotly({
+    p <- revenue_by_month() |>
+      ggplot(aes(month, total_revenue, text = paste0("Month: ", format(month, "%b %Y"), "<br>Revenue: £", label_comma()(total_revenue)))) +
       geom_line(colour = "#2c7bb6", linewidth = 1) +
       geom_point(colour = "#2c7bb6", size = 2) +
       expand_limits(y = 0) +
       scale_y_continuous(labels = label_comma(prefix = "£")) +
       labs(title = "Monthly Revenue Trend", x = "Month", y = "Revenue (£)") +
       theme_sales()
+    ggplotly(p, tooltip = "text")
   })
 
-  output$p2 <- renderPlot({
-    top_products() |>
+  output$p2 <- renderPlotly({
+    p <- top_products() |>
       mutate(description = str_trunc(description, 35)) |>
-      ggplot(aes(total_revenue, fct_reorder(description, total_revenue))) +
+      ggplot(aes(total_revenue, fct_reorder(description, total_revenue), text = paste0(description, "<br>Revenue: £", label_comma()(total_revenue)))) +
       geom_col(fill = "#2c7bb6") +
       scale_x_continuous(labels = label_comma(prefix = "£")) +
       labs(title = "Top 10 Products by Revenue", x = "Total Revenue (£)", y = NULL) +
       theme_sales()
+    ggplotly(p, tooltip = "text")
   })
 
-  output$p3 <- renderPlot({
-    revenue_by_country() |>
-      ggplot(aes(total_revenue, fct_reorder(country, total_revenue))) +
+  output$p3 <- renderPlotly({
+    p <- revenue_by_country() |>
+      ggplot(aes(total_revenue, fct_reorder(country, total_revenue), text = paste0(country, "<br>Revenue: £", label_comma()(total_revenue)))) +
       geom_col(fill = "#d7191c") +
       scale_x_continuous(labels = label_comma(prefix = "£")) +
       labs(title = "Top 10 Countries by Revenue", x = "Total Revenue (£)", y = NULL) +
       theme_sales()
+    ggplotly(p, tooltip = "text")
   })
 
-  output$p4 <- renderPlot({
-    customers_by_month() |>
-      ggplot(aes(month, unique_customers)) +
+  output$p4 <- renderPlotly({
+    p <- customers_by_month() |>
+      ggplot(aes(month, unique_customers, text = paste0("Month: ", format(month, "%b %Y"), "<br>Customers: ", unique_customers))) +
       geom_line(colour = "#1a9641", linewidth = 1) +
       geom_point(colour = "#1a9641", size = 2) +
       expand_limits(y = 0) +
       scale_y_continuous(labels = label_comma()) +
       labs(title = "Monthly Unique Customers", x = "Month", y = "Unique Customers") +
       theme_sales()
+    ggplotly(p, tooltip = "text")
   })
 
-  output$p5 <- renderPlot({
-    avg_order_value() |>
-      ggplot(aes(month, avg_order_value)) +
+  output$p5 <- renderPlotly({
+    p <- avg_order_value() |>
+      ggplot(aes(month, avg_order_value, text = paste0("Month: ", format(month, "%b %Y"), "<br>Avg Order: £", label_comma()(avg_order_value)))) +
       geom_line(colour = "#fdae61", linewidth = 1) +
       geom_point(colour = "#fdae61", size = 2) +
       expand_limits(y = 0) +
       scale_y_continuous(labels = label_comma(prefix = "£")) +
       labs(title = "Average Order Value by Month", x = "Month", y = "Avg Order Value (£)") +
       theme_sales()
+    ggplotly(p, tooltip = "text")
   })
 
-  output$p6 <- renderPlot({
-    revenue_by_year() |>
-      ggplot(aes(factor(year), total_revenue)) +
+  output$p6 <- renderPlotly({
+    p <- revenue_by_year() |>
+      ggplot(aes(factor(year), total_revenue, text = paste0("Year: ", year, "<br>Revenue: £", label_comma()(total_revenue)))) +
       geom_col(fill = "#2c7bb6") +
       scale_y_continuous(labels = label_comma(prefix = "£")) +
       labs(title = "Revenue by Year", x = "Year", y = "Revenue (£)") +
       theme_sales()
+    ggplotly(p, tooltip = "text")
   })
 
   output$summary_table <- renderTable({
