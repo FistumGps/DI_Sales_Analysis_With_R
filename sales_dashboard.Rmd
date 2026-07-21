@@ -1,0 +1,64 @@
+---
+title: "Sales Analysis Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(here)
+
+source(here::here("app.R"))
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Revenue Summary
+
+```{r}
+revenue_by_month |>
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Revenue Trend
+
+```{r}
+p1
+```
+
+### Top Products
+
+```{r}
+p2
+```
+
+### Revenue by Country
+
+```{r}
+p3
+```
+
+### Monthly Unique Customers
+
+```{r}
+p4
+```
+
+### Average Order Value
+
+```{r}
+p5
+```
+
+### Revenue by Year
+
+```{r}
+p6
+```

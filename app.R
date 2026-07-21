@@ -125,6 +125,15 @@ avg_order_value <- sales_clean |>
   ) |>
   arrange(month)
 
+# ── Analysis 6: Revenue by year ───────────────────────────
+revenue_by_year <- sales_clean |>
+  group_by(year) |>
+  summarise(
+    total_revenue = sum(revenue),
+    .groups       = "drop"
+  ) |>
+  arrange(year)  
+
 # ── Plot 1: Monthly revenue trend ───────────────────────────
 p1 <- revenue_by_month |>
   ggplot(aes(month, total_revenue)) +
@@ -192,13 +201,26 @@ p5 <- avg_order_value |>
   ) +
   theme_sales()
 
+p6 <- revenue_by_year |>
+  ggplot(aes(factor(year), total_revenue)) +
+  geom_col(fill = "#2c7bb6") +
+  scale_y_continuous(labels = label_comma(prefix = "£")) +
+  labs(
+    title = "Revenue by Year",
+    x     = "Year",
+    y     = "Revenue (£)"
+  ) +
+  theme_sales()  
+
 # Export plots ----
 ggsave(here::here("outputs/01_revenue_trend.png"),      plot = p1, width = 10, height = 5)
 ggsave(here::here("outputs/02_top_products.png"),       plot = p2, width = 10, height = 6)
 ggsave(here::here("outputs/03_revenue_by_country.png"), plot = p3, width = 10, height = 6)
 ggsave(here::here("outputs/04_monthly_customers.png"),  plot = p4, width = 10, height = 5)
 ggsave(here::here("outputs/05_avg_order_value.png"),    plot = p5, width = 10, height = 5)
+ggsave(here::here("outputs/06_revenue_by_year.png"),    plot = p6, width = 10, height = 5)
 
+Step 4: Create a new R Markdown file named "sales_dashboard.Rmd" in the project folder.
 # Export summary table ----
 revenue_by_month |>
   write_csv(here::here("outputs/revenue_summary.csv"))
