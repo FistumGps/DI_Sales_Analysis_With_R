@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Fistum.Haile\\\\Downloads\\\\Desta I\\\\R\\\\Sales Analysis for an E-commerce Business\\\\R\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Fistum.Haile\\\\Downloads\\\\Desta I\\\\R\\\\Sales Analysis for an E-commerce Business\\\\src\")",
+      "PowerShell(& \"C:\\\\Program Files\\\\R\\\\R-4.5.3\\\\bin\\\\Rscript.exe\" \"c:\\\\Users\\\\Fistum.Haile\\\\Downloads\\\\Desta I\\\\R\\\\Sales Analysis for an E-commerce Business\\\\app.R\")"
+    ]
+  }
+}
